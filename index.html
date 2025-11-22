@@ -34,9 +34,6 @@
             background-clip: text;
             color: transparent;
         }
-        .gold-border {
-            border-image: linear-gradient(to right, #bf953f, #fcf6ba, #b38728) 1;
-        }
         /* Animaciones */
         .fade-in { animation: fadeIn 1s ease-in; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -94,84 +91,46 @@
 
         const App = () => {
             const [started, setStarted] = useState(false);
-            const [audioMuted, setAudioMuted] = useState(false);
-            const [audioError, setAudioError] = useState(null);
-            const audioRef = useRef(null);
+            const [youtubeUrl, setYoutubeUrl] = useState("");
+            const [isMuted, setIsMuted] = useState(false);
 
-            // Intentar reproducir audio
-            const attemptPlay = () => {
-                if (audioRef.current) {
-                    setAudioError(null);
-                    audioRef.current.volume = 0.5;
-                    const playPromise = audioRef.current.play();
-                    
-                    if (playPromise !== undefined) {
-                        playPromise
-                            .then(() => {
-                                console.log("Audio reproduciendo correctamente");
-                                setAudioMuted(false);
-                            })
-                            .catch(error => {
-                                console.error("Error reproduciendo audio:", error);
-                                setAudioError("No se pudo reproducir. Click en el icono de volumen.");
-                                setAudioMuted(true);
-                            });
-                    }
-                }
-            };
-
+            // ID del video de Lukas Graham - 7 Years
+            // Usamos la API de embed de YouTube con parámetros para ocultar controles y hacer loop
+            const VIDEO_ID = "LHCob76kigA"; 
+            
             const handleStart = () => {
                 setStarted(true);
-                attemptPlay();
+                // Construimos la URL con autoplay activado
+                // playlist=VIDEO_ID es necesario para que el loop funcione en embeds de un solo video
+                setYoutubeUrl(`https://www.youtube.com/embed/${VIDEO_ID}?autoplay=1&mute=0&controls=0&loop=1&playlist=${VIDEO_ID}&playsinline=1`);
             };
 
             const toggleAudio = () => {
-                if (audioRef.current) {
-                    if (audioRef.current.paused) {
-                        attemptPlay(); // Si está pausado, intenta reproducir con fuerza
-                    } else {
-                        audioRef.current.pause();
-                        setAudioMuted(true);
-                    }
-                }
+                setIsMuted(!isMuted);
+                // Para "mutear" un iframe de YouTube recargamos la URL con el parámetro mute cambiado
+                // Es un truco porque no podemos controlar el iframe directamente sin la API pesada
+                const muteParam = !isMuted ? "1" : "0";
+                 setYoutubeUrl(`https://www.youtube.com/embed/${VIDEO_ID}?autoplay=1&mute=${muteParam}&controls=0&loop=1&playlist=${VIDEO_ID}&playsinline=1`);
             };
-
-            // Listener para actualizar el estado del icono si el audio se pausa solo
-            useEffect(() => {
-                const audio = audioRef.current;
-                if (!audio) return;
-
-                const onPlay = () => setAudioMuted(false);
-                const onPause = () => setAudioMuted(true);
-
-                audio.addEventListener('play', onPlay);
-                audio.addEventListener('pause', onPause);
-                
-                return () => {
-                    audio.removeEventListener('play', onPlay);
-                    audio.removeEventListener('pause', onPause);
-                };
-            }, []);
 
             return (
                 <div className="min-h-screen bg-slate-900 text-gray-100 selection:bg-amber-500 selection:text-white">
                     
-                    {/* AUDIO MEJORADO: Soporta más formatos y mayúsculas/minúsculas */}
-                    <audio ref={audioRef} loop id="bg-music" preload="auto">
-                        {/* Opción 1: MP3 (Estándar) */}
-                        <source src="Musica.mp3" type="audio/mpeg" />
-                        <source src="musica.mp3" type="audio/mpeg" />
-                        
-                        {/* Opción 2: MP4 (A veces los usuarios suben video como audio) */}
-                        <source src="Musica.mp4" type="audio/mp4" />
-                        <source src="musica.mp4" type="audio/mp4" />
-
-                        {/* Opción 3: MPEG puro (Caso del archivo renombrado) */}
-                        <source src="Musica.mpeg" />
-                        <source src="musica.mpeg" />
-                        <source src="Musica.mpg" />
-                        <source src="musica.mpg" />
-                    </audio>
+                    {/* REPRODUCTOR YOUTUBE INVISIBLE */}
+                    {/* Lo movemos fuera de la pantalla en lugar de display:none para que cargue */}
+                    <div style={{ position: 'fixed', top: '-9999px', left: '-9999px', width: '1px', height: '1px', overflow: 'hidden', zIndex: -1 }}>
+                        {youtubeUrl && (
+                            <iframe 
+                                width="560" 
+                                height="315" 
+                                src={youtubeUrl} 
+                                title="Musica de Fondo" 
+                                frameBorder="0" 
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                allowFullScreen
+                            ></iframe>
+                        )}
+                    </div>
 
                     {!started && (
                         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950 text-center p-4 bg-[url('https://images.unsplash.com/photo-1513151233558-d860c5398176?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center">
@@ -185,27 +144,21 @@
                                 >
                                     INGRESAR A LA EXPERIENCIA
                                 </button>
-                                <p className="mt-4 text-sm text-gray-500">(Incluye música)</p>
+                                <p className="mt-4 text-sm text-gray-500">(Incluye música: 7 Years)</p>
                             </div>
                         </div>
                     )}
 
                     {started && (
                         <>
-                            {/* Botón flotante de música */}
+                            {/* Botón flotante de música (Controla el mute del video) */}
                             <div className="fixed top-4 right-4 z-50 flex flex-col items-end gap-2">
                                 <button 
                                     onClick={toggleAudio}
                                     className="p-3 bg-black/50 backdrop-blur-md rounded-full border border-amber-500/50 hover:bg-amber-900/50 transition-colors"
                                 >
-                                    {audioMuted ? <VolumeX className="w-6 h-6 text-amber-500" /> : <Volume2 className="w-6 h-6 text-amber-500" />}
+                                    {isMuted ? <VolumeX className="w-6 h-6 text-amber-500" /> : <Volume2 className="w-6 h-6 text-amber-500" />}
                                 </button>
-                                {/* Mensaje de error de audio si falla */}
-                                {audioError && (
-                                    <div className="bg-red-900/80 text-white text-xs px-3 py-1 rounded-md animate-bounce border border-red-500">
-                                        {audioError}
-                                    </div>
-                                )}
                             </div>
 
                             <HeroSection />
