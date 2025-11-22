@@ -63,7 +63,6 @@
         const { useState, useEffect, useRef } = React;
 
         // --- ICONOS SVG INTEGRADOS ---
-        // Reemplazo de Lucide para evitar errores de importación en React standalone
         const Icons = {
             Camera: (props) => (
                 <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
@@ -93,20 +92,27 @@
 
         const { Camera, Video, Volume2, VolumeX, ChevronDown, Star, Mail, Unlock } = Icons;
 
-        // --- CONFIGURACIÓN DE NOMBRES DE ARCHIVO ---
-        // NOTA PARA EL USUARIO: El código generará automáticamente nombres como "Decada70-Img1.png"
-        // No necesitas editar esto a menos que cambies la estructura de nombres.
-
         const App = () => {
             const [started, setStarted] = useState(false);
             const [audioMuted, setAudioMuted] = useState(false);
             const audioRef = useRef(null);
 
+            // FIX: Intentar reproducir inmediatamente al hacer click
             const handleStart = () => {
                 setStarted(true);
                 if (audioRef.current) {
                     audioRef.current.volume = 0.5;
-                    audioRef.current.play().catch(e => console.log("Audio play failed:", e));
+                    // Promesa de reproducción para manejar errores
+                    const playPromise = audioRef.current.play();
+                    if (playPromise !== undefined) {
+                        playPromise
+                            .then(() => {
+                                console.log("Audio reproduciendo correctamente");
+                            })
+                            .catch(error => {
+                                console.log("Auto-play fue prevenido:", error);
+                            });
+                    }
                 }
             };
 
@@ -121,52 +127,57 @@
                 }
             };
 
-            if (!started) {
-                return (
-                    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950 text-center p-4 bg-[url('https://images.unsplash.com/photo-1513151233558-d860c5398176?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center">
-                        <div className="absolute inset-0 bg-black/80"></div>
-                        <div className="relative z-10 max-w-2xl animate-fade-in p-8 border border-amber-500/30 bg-black/40 backdrop-blur-sm rounded-xl">
-                            <h1 className="text-5xl md:text-7xl font-bold mb-6 gold-text">50 Años</h1>
-                            <p className="text-xl text-gray-300 mb-8 font-light">Una historia, mil recuerdos, una leyenda.</p>
-                            <button 
-                                onClick={handleStart}
-                                className="px-8 py-4 bg-amber-600 hover:bg-amber-700 text-white rounded-full text-lg font-bold tracking-widest transition-all transform hover:scale-105 shadow-[0_0_20px_rgba(245,158,11,0.5)]"
-                            >
-                                INGRESAR A LA EXPERIENCIA
-                            </button>
-                            <p className="mt-4 text-sm text-gray-500">(Incluye música)</p>
-                        </div>
-                    </div>
-                );
-            }
-
             return (
                 <div className="min-h-screen bg-slate-900 text-gray-100 selection:bg-amber-500 selection:text-white">
-                    {/* Audio invisible en loop */}
-                    <audio ref={audioRef} loop id="bg-music">
+                    
+                    {/* FIX: El audio ahora está SIEMPRE renderizado, oculto, esperando el play */}
+                    <audio ref={audioRef} loop id="bg-music" preload="auto">
                         <source src="Musica.mp3" type="audio/mpeg" />
+                        <source src="musica.mp3" type="audio/mpeg" />
                         <source src="Musica.mp4" type="audio/mp4" />
+                        <source src="musica.mp4" type="audio/mp4" />
                         Tu navegador no soporta audio.
                     </audio>
 
-                    {/* Botón flotante de música */}
-                    <button 
-                        onClick={toggleAudio}
-                        className="fixed top-4 right-4 z-50 p-3 bg-black/50 backdrop-blur-md rounded-full border border-amber-500/50 hover:bg-amber-900/50 transition-colors"
-                    >
-                        {audioMuted ? <VolumeX className="w-6 h-6 text-amber-500" /> : <Volume2 className="w-6 h-6 text-amber-500" />}
-                    </button>
+                    {!started && (
+                        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950 text-center p-4 bg-[url('https://images.unsplash.com/photo-1513151233558-d860c5398176?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center">
+                            <div className="absolute inset-0 bg-black/80"></div>
+                            <div className="relative z-10 max-w-2xl animate-fade-in p-8 border border-amber-500/30 bg-black/40 backdrop-blur-sm rounded-xl">
+                                <h1 className="text-5xl md:text-7xl font-bold mb-6 gold-text">50 Años</h1>
+                                <p className="text-xl text-gray-300 mb-8 font-light">Una historia, mil recuerdos, una leyenda.</p>
+                                <button 
+                                    onClick={handleStart}
+                                    className="px-8 py-4 bg-amber-600 hover:bg-amber-700 text-white rounded-full text-lg font-bold tracking-widest transition-all transform hover:scale-105 shadow-[0_0_20px_rgba(245,158,11,0.5)]"
+                                >
+                                    INGRESAR A LA EXPERIENCIA
+                                </button>
+                                <p className="mt-4 text-sm text-gray-500">(Incluye música)</p>
+                            </div>
+                        </div>
+                    )}
 
-                    <HeroSection />
-                    <TimelineSection />
-                    <PartyAlbumSection />
-                    <VideoSection />
-                    <QuotesSection />
-                    <SecretEnvelopeSection />
-                    
-                    <footer className="py-10 text-center text-gray-500 text-sm border-t border-gray-800">
-                        <p>&copy; 2024 - Hecho con amor para los 50 años.</p>
-                    </footer>
+                    {started && (
+                        <>
+                            {/* Botón flotante de música */}
+                            <button 
+                                onClick={toggleAudio}
+                                className="fixed top-4 right-4 z-50 p-3 bg-black/50 backdrop-blur-md rounded-full border border-amber-500/50 hover:bg-amber-900/50 transition-colors"
+                            >
+                                {audioMuted ? <VolumeX className="w-6 h-6 text-amber-500" /> : <Volume2 className="w-6 h-6 text-amber-500" />}
+                            </button>
+
+                            <HeroSection />
+                            <TimelineSection />
+                            <PartyAlbumSection />
+                            <VideoSection />
+                            <QuotesSection />
+                            <SecretEnvelopeSection />
+                            
+                            <footer className="py-10 text-center text-gray-500 text-sm border-t border-gray-800">
+                                <p>&copy; 2024 - Hecho con amor para los 50 años.</p>
+                            </footer>
+                        </>
+                    )}
                 </div>
             );
         };
