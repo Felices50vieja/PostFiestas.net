@@ -95,20 +95,16 @@
             const [isMuted, setIsMuted] = useState(false);
 
             // ID del video de Lukas Graham - 7 Years
-            // Usamos la API de embed de YouTube con parámetros para ocultar controles y hacer loop
             const VIDEO_ID = "LHCob76kigA"; 
             
             const handleStart = () => {
                 setStarted(true);
-                // Construimos la URL con autoplay activado
-                // playlist=VIDEO_ID es necesario para que el loop funcione en embeds de un solo video
+                // URL optimizada para loop y autoplay
                 setYoutubeUrl(`https://www.youtube.com/embed/${VIDEO_ID}?autoplay=1&mute=0&controls=0&loop=1&playlist=${VIDEO_ID}&playsinline=1`);
             };
 
             const toggleAudio = () => {
                 setIsMuted(!isMuted);
-                // Para "mutear" un iframe de YouTube recargamos la URL con el parámetro mute cambiado
-                // Es un truco porque no podemos controlar el iframe directamente sin la API pesada
                 const muteParam = !isMuted ? "1" : "0";
                  setYoutubeUrl(`https://www.youtube.com/embed/${VIDEO_ID}?autoplay=1&mute=${muteParam}&controls=0&loop=1&playlist=${VIDEO_ID}&playsinline=1`);
             };
@@ -117,7 +113,6 @@
                 <div className="min-h-screen bg-slate-900 text-gray-100 selection:bg-amber-500 selection:text-white">
                     
                     {/* REPRODUCTOR YOUTUBE INVISIBLE */}
-                    {/* Lo movemos fuera de la pantalla en lugar de display:none para que cargue */}
                     <div style={{ position: 'fixed', top: '-9999px', left: '-9999px', width: '1px', height: '1px', overflow: 'hidden', zIndex: -1 }}>
                         {youtubeUrl && (
                             <iframe 
@@ -151,7 +146,6 @@
 
                     {started && (
                         <>
-                            {/* Botón flotante de música (Controla el mute del video) */}
                             <div className="fixed top-4 right-4 z-50 flex flex-col items-end gap-2">
                                 <button 
                                     onClick={toggleAudio}
@@ -177,10 +171,8 @@
             );
         };
 
-        // --- Componente 1: Hero / Portada ---
         const HeroSection = () => (
             <section className="relative h-screen flex items-center justify-center overflow-hidden">
-                {/* Fondo abstracto animado */}
                 <div className="absolute inset-0 bg-gradient-to-b from-slate-900 via-purple-900/20 to-slate-900 z-0"></div>
                 <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]"></div>
                 
@@ -202,7 +194,9 @@
             </section>
         );
 
-        // --- Componente Helper para Imágenes con Fallback ---
+        // --- SmartImage Actualizado ---
+        // CAMBIO CLAVE: Cambiado object-cover a object-contain para asegurar que la imagen se vea entera.
+        // Agregado bg-black/40 para que el espacio sobrante (letterbox) se vea elegante.
         const SmartImage = ({ src, alt, className, isVideo = false }) => {
             const [error, setError] = useState(false);
             const [loaded, setLoaded] = useState(false);
@@ -217,12 +211,13 @@
             }
 
             return (
-                <div className={`relative overflow-hidden ${className}`}>
+                <div className={`relative overflow-hidden bg-black/40 ${className}`}>
                     {!loaded && <div className="absolute inset-0 bg-slate-800 animate-pulse"></div>}
                     <img 
                         src={src} 
                         alt={alt} 
-                        className={`w-full h-full object-cover transition-opacity duration-500 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+                        // AQUÍ ESTÁ EL CAMBIO: object-contain en vez de object-cover
+                        className={`w-full h-full object-contain transition-opacity duration-500 ${loaded ? 'opacity-100' : 'opacity-0'}`}
                         onLoad={() => setLoaded(true)}
                         onError={() => setError(true)}
                     />
@@ -230,7 +225,6 @@
             );
         };
 
-        // --- Componente 2: Línea de Tiempo (Décadas) ---
         const TimelineSection = () => {
             const decades = [
                 { id: '70', label: 'Los 70', year: '1970' },
@@ -254,7 +248,6 @@
                     <div className="space-y-8">
                         {decades.map((decada) => (
                             <div key={decada.id} className="border-l-2 border-amber-700/30 ml-4 md:ml-10 pl-6 md:pl-10 relative pb-8">
-                                {/* Punto de la línea de tiempo */}
                                 <div 
                                     className={`absolute -left-[11px] top-0 w-6 h-6 rounded-full border-4 border-slate-900 transition-colors duration-300 cursor-pointer ${activeDecade === decada.id ? 'bg-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.8)]' : 'bg-gray-600 hover:bg-amber-600'}`}
                                     onClick={() => setActiveDecade(activeDecade === decada.id ? null : decada.id)}
@@ -270,10 +263,9 @@
                                     <p className="text-sm text-gray-500 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">Click para ver fotos</p>
                                 </div>
 
-                                {/* Galería Expandible */}
                                 <div className={`grid grid-cols-2 md:grid-cols-5 gap-4 mt-6 transition-all duration-700 ease-in-out overflow-hidden ${activeDecade === decada.id ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}>
                                     {getDecadeImages(decada.id).map((imgSrc, idx) => (
-                                        <div key={idx} className="aspect-[3/4] rounded-lg overflow-hidden shadow-lg hover:scale-105 transition-transform duration-300 bg-black">
+                                        <div key={idx} className="aspect-[3/4] rounded-lg overflow-hidden shadow-lg hover:scale-105 transition-transform duration-300 bg-black border border-gray-800">
                                             <SmartImage src={imgSrc} alt={`Foto década ${decada.id}`} className="w-full h-full" />
                                         </div>
                                     ))}
@@ -285,7 +277,6 @@
             );
         };
 
-        // --- Componente 3: Álbum Fiesta 50 ---
         const PartyAlbumSection = () => {
             const partyPhotos = Array.from({ length: 20 }, (_, i) => `Album50img${i + 1}.png`);
 
@@ -304,7 +295,7 @@
                             {partyPhotos.map((src, idx) => (
                                 <div key={idx} className="relative group overflow-hidden aspect-square bg-gray-900">
                                     <SmartImage src={src} alt="Foto cumple 50" className="w-full h-full opacity-90 group-hover:opacity-100 transition-all duration-500 group-hover:scale-110" />
-                                    <div className="absolute inset-0 bg-amber-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                    <div className="absolute inset-0 bg-amber-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
                                 </div>
                             ))}
                         </div>
@@ -313,7 +304,6 @@
             );
         };
 
-        // --- Componente 4: Videos ---
         const VideoSection = () => {
             const videos = Array.from({ length: 10 }, (_, i) => `cumple50-video${i + 1}.mp4`);
 
@@ -326,11 +316,11 @@
                             {videos.map((vidSrc, idx) => (
                                 <div key={idx} className="bg-gray-800 rounded-xl overflow-hidden shadow-2xl border border-gray-700 hover:border-amber-500/50 transition-colors">
                                     <div className="aspect-video bg-black relative flex items-center justify-center">
+                                        {/* Ajuste para videos: object-contain para asegurar que no se recorten */}
                                         <video 
                                             controls 
-                                            className="w-full h-full object-cover"
+                                            className="w-full h-full object-contain"
                                             onError={(e) => {
-                                                // Fallback visual si el video falla
                                                 e.target.style.display = 'none';
                                                 e.target.parentElement.innerHTML = `<div class="text-gray-500 flex flex-col items-center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></svg><span class="text-xs mt-2">${vidSrc}</span></div>`;
                                             }}
@@ -350,7 +340,6 @@
             );
         };
 
-        // --- Componente 5: Frases (Mini Libro) ---
         const QuotesSection = () => {
             const quotes = [
                 "Pendejo demierda te voy a cagar a palo",
@@ -395,7 +384,6 @@
             );
         };
 
-        // --- Componente 6: El Sobre Secreto ---
         const SecretEnvelopeSection = () => {
             const [clicks, setClicks] = useState(0);
             const [unlocked, setUnlocked] = useState(false);
@@ -423,7 +411,6 @@
                 <section className="py-32 bg-slate-900 flex flex-col items-center justify-center px-4">
                     <div className="max-w-md w-full bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8 text-center relative overflow-hidden">
                         
-                        {/* Brillo decorativo */}
                         <div className="absolute -top-20 -left-20 w-40 h-40 bg-amber-500/20 rounded-full blur-3xl"></div>
 
                         <h3 className="text-2xl font-bold mb-6 text-amber-200">Mensaje Confidencial</h3>
@@ -452,7 +439,6 @@
                                     <Mail className="w-16 h-16 text-amber-500" />
                                 )}
                                 
-                                {/* Contador flotante */}
                                 {!unlocked && clicks > 0 && (
                                     <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center animate-bounce">
                                         {targetClicks - clicks}
